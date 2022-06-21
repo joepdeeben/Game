@@ -10,6 +10,14 @@ def translate(x, y, z, input):
 ])
     return np.dot(t, input)
 
+def scale(scale, input):
+    s = np.array([
+    [1 * scale, 0, 0, 0],
+    [0, 1 * scale, 0, 0],
+    [0, 0, 1 * scale, 0],
+    [0, 0, 0, 1]
+])
+    return np.dot(s, input)
 
 display = np.array([
     [1, 0, 0, 0],

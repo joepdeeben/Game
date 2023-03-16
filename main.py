@@ -1,51 +1,161 @@
-from object_3d import *
-from camera import *
-from projection import *
+import numpy
 import pygame as pg
+import numpy as np
+from matrix_functions import *
+import keyboard
+from resources.world import *
+
+pg.init()
 
 
-class SoftwareRender:
-    def __init__(self):
-        pg.init()
-        self.RES = self.WIDTH, self.HEIGHT = 1600, 900
-        self.H_WIDTH, self.H_HEIGHT = self.WIDTH // 2, self.HEIGHT // 2
-        self.FPS = 60
-        self.screen = pg.display.set_mode(self.RES)
-        self.clock = pg.time.Clock()
-        self.create_objects()
-
-    def create_objects(self):
-        self.camera = Camera(self, [-5, 6, -55])
-        self.projection = Projection(self)
-        self.object = self.get_object_from_file('resources/t_34_obj.obj')
-        self.object.rotate_y(-math.pi / 4)
-
-    def get_object_from_file(self, filename):
-        vertex, faces = [], []
-        with open(filename) as f:
-            for line in f:
-                if line.startswith('v '):
-                    vertex.append([float(i) for i in line.split()[1:]] + [1])
-                elif line.startswith('f'):
-                    faces_ = line.split()[1:]
-                    faces.append([int(face_.split('/')[0]) - 1 for face_ in faces_])
-        return Object3D(self, vertex, faces)
-
-    def draw(self):
-        self.screen.fill(pg.Color('darkslategray'))
-        self.object.draw()
-
-    def run(self):
-        while True:
-            self.draw()
-            self.camera.control()
-            [exit() for i in pg.event.get() if i.type == pg.QUIT]
-            pg.display.set_caption(str(self.clock.get_fps()))
-            pg.display.flip()
-            self.clock.tick(self.FPS)
 
 
-if __name__ == '__main__':
-    app = SoftwareRender()
-    app.run()
+def interpreter(worldmap):
+    objectcoordinates = []
+    object = []
+    z = 2000
+    x = 0
+    for zaxis in worldmap:
+        x = 0
+        for xaxis in zaxis:
+            if xaxis == 1:
+                object.append([x, 300, z, 1])
+                object.append([x + 200, 300, z, 1])
+                object.append([x + 200, -300, z, 1])
+                object.append([x, -300, z, 1])
+                object.append([x, 300, z, 1])
+                objectcoordinates.append(object)
+                object = []
+            elif xaxis == 2:
+                object.append([x, 300, z, 1])
+                object.append([x, 300, z - 200, 1])
+                object.append([x, -300, z - 200, 1])
+                object.append([x, -300, z, 1])
+                object.append([x, 300, z, 1])
+                objectcoordinates.append(object)
+                object = []
+
+            x += 200
+        z -= 200
+    return objectcoordinates
+
+
+
+def raycaster(objectcoordinates):
+
+    t = 640 / np.dot(objectcoordinates, [0, 0, 1, 0])
+    if t < 0:
+        return objectcoordinates * 0
+    else:
+        scaled = objectcoordinates * t
+        return scaled
+
+def drawer(points, camerapos, cameradirection):
+        for point in points:
+            count = 0
+            lastx = 0
+            lasty = 0
+            for i in point:
+
+                i = i + camerapos
+                i = rotate_y(a) @ i
+                i = rotate_x(b) @ i
+
+                i = i - camerapos
+
+                i = i + camerapos
+                i = raycaster(i)
+
+                count += 1
+
+
+                if np.array_equal(np.absolute(i), [0, 0, 0, 0]):
+                    break
+                x = i[0] + 320
+                y = i[1] + 320
+
+
+
+                pg.draw.circle(background, black, (x, y), radius=3)
+                if count > 1:
+                    pg.draw.line(background, black, (lastx, lasty), (x, y), 2)
+
+                lastx = x
+                lasty = y
+
+width, height = 640, 640
+black = (0, 0, 0)
+white = (255, 255, 255)
+run = True
+
+
+
+fps = pg.time.Clock()
+
+
+np.set_printoptions(suppress=True)
+
+
+a = 0
+b = 0
+
+worldmap_interpreted = interpreter(world)
+
+
+camerapos = np.array([0, 0, 0, 0])
+cameradirection = np.array([0, 0, 1, 0])
+
+print(worldmap_interpreted)
+
+timeinair = 0
+velocity = 0
+
+while run:
+    fps.tick(60)
+
+    if camerapos[1] > 0:
+        velocity -= 0.01 * timeinair
+        timeinair += 1
+    elif camerapos[1] <= 0:
+        velocity = 0
+        camerapos[1] = 0
+
+    if keyboard.is_pressed('space'):
+        velocity = 200
+
+    camerapos[1] += velocity / 5
+    print(camerapos)
+
+    if keyboard.is_pressed('left arrow'):
+        a -= 0.02
+        cameradirection = rotate_y(-a) @ np.array([0, 0, 1, 0])
+    if keyboard.is_pressed('a'):
+        camerapos = camerapos - numpy.append((15 * np.cross(numpy.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
+        print(camerapos)
+    if keyboard.is_pressed('d'):
+        camerapos = camerapos + numpy.append((15 * np.cross(numpy.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
+        print(camerapos)
+    if keyboard.is_pressed('w'):
+        camerapos = camerapos - (15 * cameradirection)
+        print(camerapos)
+    if keyboard.is_pressed('s'):
+        camerapos = camerapos + (15 * cameradirection)
+        print(camerapos)
+    if keyboard.is_pressed('right arrow'):
+        a += 0.02
+        cameradirection = rotate_y(-a) @ np.array([0, 0, 1, 0])
+    if keyboard.is_pressed('up arrow'):
+        b += 0.02
+    if keyboard.is_pressed('down arrow'):
+        b -= 0.02
+
+    background = pg.display.set_mode((width, height))
+    background.fill(color=white)
+
+    drawer(worldmap_interpreted,camerapos, cameradirection)
+
+    pg.display.flip()
+
+
+
 

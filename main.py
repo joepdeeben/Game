@@ -1,6 +1,8 @@
 import numpy
 import pygame as pg
 import numpy as np
+import pygame.event
+
 from matrix_functions import *
 import keyboard
 from resources.world import *
@@ -32,6 +34,14 @@ def interpreter(worldmap):
                 object.append([x, -300, z - 200, 1])
                 object.append([x, -300, z, 1])
                 object.append([x, 300, z, 1])
+                objectcoordinates.append(object)
+                object = []
+            elif xaxis == 3:
+                object.append([x, 300, z + 200, 1])
+                object.append([x, 300, z - 200, 1])
+                object.append([x, -300, z - 200, 1])
+                object.append([x, -300, z + 200, 1])
+                object.append([x, 300, z + 200, 1])
                 objectcoordinates.append(object)
                 object = []
 
@@ -113,22 +123,27 @@ velocity = 0
 while run:
     fps.tick(60)
 
-    if camerapos[1] > 0:
-        velocity -= 0.01 * timeinair
+    mousemove = pg.mouse.get_rel()
+    pg.mouse.set_visible(False)
+    pg.event.set_grab(True)
+
+    if camerapos[1] <= 0:
+        velocity += 0.01 * timeinair
         timeinair += 1
-    elif camerapos[1] <= 0:
+    elif camerapos[1] > 0:
         velocity = 0
         camerapos[1] = 0
 
     if keyboard.is_pressed('space'):
         velocity = 200
+        camerapos[1] = -0.01
 
     camerapos[1] += velocity / 5
+
     print(camerapos)
 
-    if keyboard.is_pressed('left arrow'):
-        a -= 0.02
-        cameradirection = rotate_y(-a) @ np.array([0, 0, 1, 0])
+    print(mousemove)
+
     if keyboard.is_pressed('a'):
         camerapos = camerapos - numpy.append((15 * np.cross(numpy.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
         print(camerapos)
@@ -136,19 +151,18 @@ while run:
         camerapos = camerapos + numpy.append((15 * np.cross(numpy.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
         print(camerapos)
     if keyboard.is_pressed('w'):
-        camerapos = camerapos - (15 * cameradirection)
-        print(camerapos)
-    if keyboard.is_pressed('s'):
         camerapos = camerapos + (15 * cameradirection)
         print(camerapos)
-    if keyboard.is_pressed('right arrow'):
-        a += 0.02
-        cameradirection = rotate_y(-a) @ np.array([0, 0, 1, 0])
-    if keyboard.is_pressed('up arrow'):
-        b += 0.02
-    if keyboard.is_pressed('down arrow'):
-        b -= 0.02
+    if keyboard.is_pressed('s'):
+        camerapos = camerapos - (15 * cameradirection)
+        print(camerapos)
+    a -= (mousemove[0] * 0.01)
+    cameradirection = rotate_y(-a) @ np.array([0, 0, 1, 0])
 
+    b -= mousemove[1] * 0.01
+
+    if keyboard.is_pressed('escape'):
+        break
     background = pg.display.set_mode((width, height))
     background.fill(color=white)
 

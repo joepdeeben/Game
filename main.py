@@ -1,8 +1,7 @@
-import numpy
 import pygame as pg
 import numpy as np
 import pygame.event
-
+import pygame.gfxdraw
 from matrix_functions import *
 import keyboard
 from resources.world import *
@@ -10,7 +9,7 @@ from resources.world import *
 pg.init()
 
 
-
+texture = pg.image.load("resources/basado.jpg")
 
 def interpreter(worldmap):
     objectcoordinates = []
@@ -61,10 +60,14 @@ def raycaster(objectcoordinates):
         return scaled
 
 def drawer(points, camerapos, cameradirection):
+        coordinates_for_polygon = []
         for point in points:
             count = 0
             lastx = 0
             lasty = 0
+
+            coordinates_for_polygon = []
+
             for i in point:
 
                 i = i + camerapos
@@ -78,13 +81,12 @@ def drawer(points, camerapos, cameradirection):
 
                 count += 1
 
-
                 if np.array_equal(np.absolute(i), [0, 0, 0, 0]):
                     break
                 x = i[0] + 320
                 y = i[1] + 320
 
-
+                coordinates_for_polygon.append([x, y])
 
                 pg.draw.circle(background, black, (x, y), radius=3)
                 if count > 1:
@@ -92,6 +94,13 @@ def drawer(points, camerapos, cameradirection):
 
                 lastx = x
                 lasty = y
+            try:
+                pygame.gfxdraw.textured_polygon(background, [(coordinates_for_polygon[0]), (coordinates_for_polygon[1]), (coordinates_for_polygon[2])], texture, 320, 320)
+                pygame.gfxdraw.textured_polygon(background, [(coordinates_for_polygon[2]), (coordinates_for_polygon[3]), (coordinates_for_polygon[0])], texture, 320, 320)
+                array = pg.surfarray.array3d(background)
+                print(array.shape)
+            except:
+                pass
 
 width, height = 640, 640
 black = (0, 0, 0)
@@ -127,44 +136,45 @@ while run:
     pg.mouse.set_visible(False)
     pg.event.set_grab(True)
 
-    if camerapos[1] <= 0:
-        velocity += 0.01 * timeinair
+    if camerapos[1] >= 0:
+        velocity -= 0.5 * timeinair
         timeinair += 1
-    elif camerapos[1] > 0:
+    elif camerapos[1] < 0:
         velocity = 0
+        timeinair = 0
         camerapos[1] = 0
 
-    if keyboard.is_pressed('space'):
-        velocity = 200
+    if keyboard.is_pressed('space') and camerapos[1] < 2:
+        velocity = 100
         camerapos[1] = -0.01
 
     camerapos[1] += velocity / 5
 
-    print(camerapos)
-
-    print(mousemove)
 
     if keyboard.is_pressed('a'):
-        camerapos = camerapos - numpy.append((15 * np.cross(numpy.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
-        print(camerapos)
+        camerapos = camerapos - np.append((15 * np.cross(np.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
+
     if keyboard.is_pressed('d'):
-        camerapos = camerapos + numpy.append((15 * np.cross(numpy.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
-        print(camerapos)
+        camerapos = camerapos + np.append((15 * np.cross(np.delete(cameradirection, 3), np.array([0, 1, 0]))), 0)
+
     if keyboard.is_pressed('w'):
-        camerapos = camerapos + (15 * cameradirection)
-        print(camerapos)
-    if keyboard.is_pressed('s'):
         camerapos = camerapos - (15 * cameradirection)
-        print(camerapos)
-    a -= (mousemove[0] * 0.01)
+
+    if keyboard.is_pressed('s'):
+        camerapos = camerapos + (15 * cameradirection)
+
+    a += (mousemove[0] * 0.01)
     cameradirection = rotate_y(-a) @ np.array([0, 0, 1, 0])
 
     b -= mousemove[1] * 0.01
+
 
     if keyboard.is_pressed('escape'):
         break
     background = pg.display.set_mode((width, height))
     background.fill(color=white)
+
+
 
     drawer(worldmap_interpreted,camerapos, cameradirection)
 

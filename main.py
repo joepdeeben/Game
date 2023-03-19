@@ -8,9 +8,6 @@ from resources.world import *
 
 pg.init()
 
-
-texture = pg.image.load("resources/basado.jpg")
-
 def interpreter(worldmap):
     objectcoordinates = []
     object = []
@@ -83,27 +80,26 @@ def drawer(points, camerapos, cameradirection):
 
                 if np.array_equal(np.absolute(i), [0, 0, 0, 0]):
                     break
-                x = i[0] + 320
-                y = i[1] + 320
+                x = i[0] + 960
+                y = i[1] + 540
 
                 coordinates_for_polygon.append([x, y])
 
                 pg.draw.circle(background, black, (x, y), radius=3)
                 if count > 1:
-                    pg.draw.line(background, black, (lastx, lasty), (x, y), 2)
+                    pg.draw.line(background, black, (lastx, lasty), (x, y), 3)
 
                 lastx = x
                 lasty = y
             try:
-                pygame.gfxdraw.textured_polygon(background, [(coordinates_for_polygon[0]), (coordinates_for_polygon[1]), (coordinates_for_polygon[2])], texture, 320, 320)
-                pygame.gfxdraw.textured_polygon(background, [(coordinates_for_polygon[2]), (coordinates_for_polygon[3]), (coordinates_for_polygon[0])], texture, 320, 320)
-                array = pg.surfarray.array3d(background)
-                print(array.shape)
+                pygame.gfxdraw.filled_polygon(background, [(coordinates_for_polygon[0]), (coordinates_for_polygon[1]), (coordinates_for_polygon[2])], yellow)
+                pygame.gfxdraw.filled_polygon(background, [(coordinates_for_polygon[2]), (coordinates_for_polygon[3]), (coordinates_for_polygon[0])], yellow)
             except:
                 pass
 
-width, height = 640, 640
+width, height = 1920, 1080
 black = (0, 0, 0)
+yellow = (252, 227, 3)
 white = (255, 255, 255)
 run = True
 
